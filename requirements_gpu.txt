@@ -1,0 +1,10 @@
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch
+torchvision
+pytorch-lightning
+optuna
+pandas
+matplotlib
+scikit-learn
+wandb
+numpy
