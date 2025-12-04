@@ -1,0 +1,55 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+
+# --- Wirtualne środowiska (Virtual Environments) ---
+# To bardzo ważne, żeby nie wrzucać bibliotek na repozytorium
+venv/
+env/
+.env
+.venv/
+
+# --- Jupyter Notebooks ---
+.ipynb_checkpoints/
+*/.ipynb_checkpoints/
+
+# --- Dane (Data Sets) ---
+# GitHub ma limity wielkości plików. Danych treningowych i testowych nie wrzucamy.
+train/
+test/
+data/
+datasets/
+*.zip
+*.tar.gz
+*.csv
+# Wyjątek: jeśli chcesz trzymać małe pliki CSV w repo, usuń linię *.csv
+# lub dodaj wyjątek: !small_file.csv
+
+# --- Modele i Wagi (Model Checkpoints) ---
+# Wagi sieci neuronowych mogą być duże.
+*.pth
+*.pt
+*.h5
+*.keras
+*.onnx
+models/
+checkpoints/
+
+# --- Logi i Wizualizacje (np. TensorBoard) ---
+runs/
+logs/
+wandb/
+
+# --- IDE i Edytory (Ustawienia lokalne) ---
+.vscode/
+.idea/
+*.swp
+
+# --- Pliki wynikowe projektu ---
+submission.csv
+# Raport PDF pewnie chcesz zachować w repo, więc go nie ignoruję.
+# Jeśli generujesz go automatycznie z LaTeXa, dodaj pliki pomocnicze:
+*.aux
+*.log
+*.out
