@@ -5,11 +5,16 @@ from torchvision import transforms, datasets
 import pytorch_lightning as pl
 
 class MalariaDataModule(pl.LightningDataModule):
-    def __init__(self, data_dir: str = "./malaria_dataset", batch_size: int = 32, img_size: int = 128):
+    def __init__(self, data_dir: str = "./malaria_dataset", batch_size: int = 32, img_size: int = 224):
         super().__init__()
         self.data_dir = data_dir
         self.batch_size = batch_size
         self.img_size = img_size
+
+        # --- CORRECT IMAGENET STATISTICS ---
+        # These are crucial for pre-trained models to work correctly!
+        IMAGENET_MEAN = [0.485, 0.456, 0.406]
+        IMAGENET_STD = [0.229, 0.224, 0.225]
         
         # Path to the training folder (contains 'positive' and 'negative' subfolders)
         self.train_dir = os.path.join(data_dir, 'train')
@@ -25,7 +30,7 @@ class MalariaDataModule(pl.LightningDataModule):
             transforms.RandomVerticalFlip(),     # Flip upside down (cells have no orientation)
             transforms.ColorJitter(brightness=0.1, contrast=0.1), # Simulate lighting variations
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
 
         # Evaluation Transforms (Clean)
@@ -33,7 +38,7 @@ class MalariaDataModule(pl.LightningDataModule):
         self.eval_transform = transforms.Compose([
             transforms.Resize((img_size, img_size)),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+            transforms.Normalize(mean=IMAGENET_MEAN, std=IMAGENET_STD)
         ])
 
     def setup(self, stage=None):
