@@ -6,6 +6,7 @@ import pytorch_lightning as L
 from src.data_preparation.data_module import MalariaDataModule
 from optuna.builder import ModelBuilder
 from optuna.system import TrainSystem
+import torch
 
 def objective(trial: optuna.trial.Trial):
     # -------------------------------------------------
@@ -85,12 +86,22 @@ def objective(trial: optuna.trial.Trial):
     # -------------------------------------------------
     # 4. Return Metric
     # -------------------------------------------------
+
+    # Dowlad final metrics
+    # We use get with default to avoid KeyError if metric is missing
+    final_val_acc = trainer.callback_metrics.get("val_acc", torch.tensor(0.0)).item()
+    final_train_acc = trainer.callback_metrics.get("train_acc", torch.tensor(0.0)).item()
+    final_train_loss = trainer.callback_metrics.get("train_loss", torch.tensor(0.0)).item()
+    
+    # --- SAVE TO OPTUNA DATABASE ---
+    trial.set_user_attr("train_acc", final_train_acc)
+    trial.set_user_attr("train_loss", final_train_loss)
+
+    gap = final_train_acc - final_val_acc
+    trial.set_user_attr("overfit_gap", gap)
     
     # Return the best validation accuracy achieved
-    if "val_acc" in trainer.callback_metrics:
-        return trainer.callback_metrics["val_acc"].item()
-    else:
-        return 0.0
+    return final_val_acc
 
 # ==============================================================================
 # RUN OPTIMIZATION
