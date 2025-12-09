@@ -4,12 +4,13 @@ import pytorch_lightning as L
 from torchmetrics import Accuracy
 
 class TrainSystem(L.LightningModule):
-    def __init__(self, model, learning_rate, optimizer_name="Adam", num_classes=2):
+    def __init__(self, model, learning_rate, optimizer_name="Adam", num_classes=2, weight_decay=0.0):
         super().__init__()
         self.save_hyperparameters(ignore=['model'])
         self.model = model
         self.optimizer_name = optimizer_name
         self.learning_rate = learning_rate
+        self.weight_decay = weight_decay
         
         # Metrics
         self.train_acc = Accuracy(task="multiclass", num_classes=num_classes)
@@ -46,21 +47,31 @@ class TrainSystem(L.LightningModule):
         return loss
 
     def configure_optimizers(self):
-        # Dynamic Optimizer Selection (Mimicking TF dictionary)
+
         if self.optimizer_name == "Adam":
-            return torch.optim.Adam(self.parameters(), lr=self.learning_rate)
+            return torch.optim.Adam(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+
         elif self.optimizer_name == "RMSprop":
-            return torch.optim.RMSprop(self.parameters(), lr=self.learning_rate)
+            return torch.optim.RMSprop(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+
         elif self.optimizer_name == "SGD":
-            return torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.9)
+            return torch.optim.SGD(self.parameters(), lr=self.learning_rate, momentum=0.9,
+                                   weight_decay=self.weight_decay)
+
         elif self.optimizer_name == "Adamax":
-            return torch.optim.Adamax(self.parameters(), lr=self.learning_rate)
+            return torch.optim.Adamax(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+
         elif self.optimizer_name == "Adagrad":
-            return torch.optim.Adagrad(self.parameters(), lr=self.learning_rate)
+            return torch.optim.Adagrad(self.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
+
         elif self.optimizer_name == "Adadelta":
-            return torch.optim.Adagrad(self.parameters(), lr=self.learning_rate)
+            return torch.optim.Adadelta(self.parameters(), lr=self.learning_rate,
+                                        weight_decay=self.weight_decay)  # Poprawiono klasę
+
         elif self.optimizer_name == "Nadam":
-            return torch.optim.Adagrad(self.parameters(), lr=self.learning_rate)
+            return torch.optim.NAdam(self.parameters(), lr=self.learning_rate,
+                                     weight_decay=self.weight_decay)  # Poprawiono klasę
+
         else:
             raise ValueError(f"Optimizer {self.optimizer_name} not supported yet.")
     
