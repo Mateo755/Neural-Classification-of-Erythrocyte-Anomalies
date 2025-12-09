@@ -85,10 +85,10 @@ class MalariaDataModule(pl.LightningDataModule):
             print(f"Classes:       {dummy_ds.classes}") # Should be ['negative', 'positive']
 
     def train_dataloader(self):
-        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True, num_workers=4, persistent_workers=True,  pin_memory=True)
+        return DataLoader(self.train_ds, batch_size=self.batch_size, shuffle=True)#, num_workers=2, persistent_workers=True,  pin_memory=True)
 
     def val_dataloader(self):
-        return DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False, num_workers=4, persistent_workers=True,  pin_memory=True)
+        return DataLoader(self.val_ds, batch_size=self.batch_size, shuffle=False)#, num_workers=2, persistent_workers=True,  pin_memory=True)
 
     def test_dataloader(self):
-        return DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False, num_workers=4, persistent_workers=True,  pin_memory=True)
+        return DataLoader(self.test_ds, batch_size=self.batch_size, shuffle=False)#, num_workers=2, persistent_workers=True,  pin_memory=True)
