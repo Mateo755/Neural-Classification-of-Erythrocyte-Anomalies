@@ -3,8 +3,19 @@ from optuna.integration import PyTorchLightningPruningCallback
 from pytorch_lightning.loggers import CSVLogger
 import pytorch_lightning as pl
 import torch
+import os
+import sys
 
 # Import your project modules
+# 1.Download current directory
+current_dir = os.path.dirname(os.path.abspath(__file__))
+
+# 2.Go up one level to the parent directory (the root directory where src is located)
+parent_dir = os.path.dirname(current_dir)
+
+# 3, Add this parent directory to the Python path
+sys.path.append(parent_dir)
+
 from src.data_preparation.data_module import MalariaDataModule
 from builder import ModelBuilder
 from system import TrainSystem
@@ -64,7 +75,7 @@ def objective_frozen(trial: optuna.trial.Trial):
     
     # Build DataModule
     # Note: We re-initialize it to change batch_size
-    dm = MalariaDataModule(data_dir='./malaria_dataset', batch_size=batch_size)
+    dm = MalariaDataModule(data_dir='../malaria_dataset', batch_size=batch_size)
     
     # -------------------------------------------------
     # 3. Training
@@ -78,6 +89,7 @@ def objective_frozen(trial: optuna.trial.Trial):
         accelerator="auto",
         devices=1,
         enable_checkpointing=False,     # Save disk space
+        #enable_progress_bar=False,
         logger=logger,
         callbacks=[
             # This corresponds to TF's EarlyStopping/Pruning
@@ -117,9 +129,9 @@ def objective_finetune(trial: optuna.trial.Trial):
     """
     
     # === WINNER CONFIG FROM STAGE 1 (Update this manually after Stage 1!) ===
-    FIXED_BASE_MODEL = "resnet18"  # Example
-    FIXED_LAYERS = 1               # Example
-    FIXED_HIDDEN = 256             # Example
+    FIXED_BASE_MODEL = "resnet50"  # Example
+    FIXED_LAYERS = 4               # Example
+    FIXED_HIDDEN = 128             # Example
     FIXED_BATCH_SIZE = 32          # Example
     FIXED_OPTIMIZER = "Adam"       # Example
     # ========================================================================
@@ -128,6 +140,8 @@ def objective_finetune(trial: optuna.trial.Trial):
     # Note: LR range is much lower now (e.g., 1e-6 to 1e-4)
     learning_rate = trial.suggest_float("learning_rate", 1e-6, 1e-4, log=True)
     weight_decay = trial.suggest_float("weight_decay", 1e-6, 1e-3, log=True)
+    dropout_rate = trial.suggest_categorical("dropout", [0.1, 0.2, 0.3, 0.4, 0.5])
+    apply_dropout = trial.suggest_categorical("apply_dropout", [True, False])
     
     # 2. Build Components
     backbone = ModelBuilder(
@@ -137,23 +151,23 @@ def objective_finetune(trial: optuna.trial.Trial):
         num_hidden_layers=FIXED_LAYERS,
         hidden_dim=FIXED_HIDDEN,
         # We can keep dropout fixed or search it again if we want
-        use_dropout=True, dropout_rate=0.4 
+        use_dropout=apply_dropout, dropout_rate=dropout_rate
     )
     
     model = TrainSystem(
         model=backbone,
         learning_rate=learning_rate,
         optimizer_name=FIXED_OPTIMIZER,
-        # weight_decay=weight_decay  <-- Uncomment if you added this to System
+        weight_decay=weight_decay
     )
     
-    dm = MalariaDataModule(data_dir='./malaria_dataset', batch_size=FIXED_BATCH_SIZE)
+    dm = MalariaDataModule(data_dir='../malaria_dataset', batch_size=FIXED_BATCH_SIZE)
     
     # 3. Train
     logger = CSVLogger("optuna_logs_finetune", name=f"trial_{trial.number}")
     
     trainer = pl.Trainer(
-        max_epochs=3, 
+        max_epochs=4,
         accelerator="auto",
         devices=1,
         enable_checkpointing=False,
