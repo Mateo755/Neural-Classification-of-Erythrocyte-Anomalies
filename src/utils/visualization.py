@@ -61,20 +61,20 @@ def plot_training_metrics(log_dir):
     plt.show()
 
 
-    def save_confusion_matrix(cm_tensor, class_names, save_path="confusion_matrix.png"):
-        """
-        Drawing and saving confusion matrix as a heatmap.
-        """
-        # Convert tensor to numpy array
-        cm_numpy = cm_tensor.cpu().numpy()
+def save_confusion_matrix(cm_tensor, class_names, save_path="confusion_matrix.png"):
+    """
+    Drawing and saving confusion matrix as a heatmap.
+    """
+    # Convert tensor to numpy array
+    cm_numpy = cm_tensor.cpu().numpy()
 
-        plt.figure(figsize=(10, 8))
-        sns.heatmap(cm_numpy, annot=True, fmt='d', cmap='Blues', 
-                    xticklabels=class_names, yticklabels=class_names)
-        plt.ylabel('True class')
-        plt.xlabel('Predicted class')
-        plt.title('Confusion Matrix')
-        
-        plt.savefig(save_path)
-        plt.close() 
-        print(f"Confusion matrix saved to {save_path}")
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm_numpy, annot=True, fmt='d', cmap='Blues',
+                xticklabels=class_names, yticklabels=class_names)
+    plt.ylabel('True class')
+    plt.xlabel('Predicted class')
+    plt.title('Confusion Matrix')
+
+    plt.savefig(save_path)
+    plt.close()
+    print(f"Confusion matrix saved to {save_path}")

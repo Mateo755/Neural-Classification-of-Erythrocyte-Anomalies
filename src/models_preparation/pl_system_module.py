@@ -3,11 +3,12 @@ import torch.nn.functional as F
 import pytorch_lightning as pl
 from torchmetrics import Accuracy, F1Score, Precision, Recall, ConfusionMatrix
 import wandb
+import os
 
 from src.utils.visualization import save_confusion_matrix
 
 class MalariaClassifier(pl.LightningModule):
-    def __init__(self, model, learning_rate=1e-3, num_classes=2):
+    def __init__(self, model, learning_rate=1e-3, weight_decay=0.0, num_classes=2):
         super().__init__()
         # ignore=['model'] jest ważne, żeby checkpoint nie zapisywał całego obiektu modelu w hyperparametrach
         self.save_hyperparameters(ignore=['model']) 
@@ -73,33 +74,62 @@ class MalariaClassifier(pl.LightningModule):
                 'test_f1': self.test_f1
             })
             return loss
-    
+
     def on_test_epoch_end(self):
         """
-        Ta metoda uruchamia się RAZ po zakończeniu całego testowania.
-        Tu obliczamy finalną macierz pomyłek.
+        Executed once at the end of the test epoch.
+        Calculates the final Confusion Matrix, saves it locally,
+        and uploads it to W&B if the logger is active.
         """
-        # 1. Obliczamy macierz (zsumowaną ze wszystkich batchy)
+        # 1. Compute the confusion matrix (aggregated from all batches)
         cm = self.test_cm.compute()
-        
-        # 2. Definiujemy nazwy klas (muszą pasować do folderów)
-        # Możesz je też przekazać w __init__, jeśli wolisz
-        classes = ['negative', 'positive'] 
-        
-        # 3. Rysujemy i zapisujemy lokalnie
+
+        # 2. Define class names (must match your dataset structure)
+        classes = ['negative', 'positive']
+
+        # 3. Save the plot locally first
         save_path = "confusion_matrix.png"
+
+        # Ensure 'save_confusion_matrix' is imported from your utils
         save_confusion_matrix(cm, classes, save_path=save_path)
-        
-        # 4. Jeśli używamy WandB, wysyłamy obrazek do chmury
-        # Sprawdzamy, czy logger to WandBLogger
-        if isinstance(self.logger, pl.loggers.WandbLogger):
-            self.logger.experiment.log({
+
+        # 4. Upload to Weights & Biases
+        # We need to robustly find the WandbLogger, as 'self.logger' might be a list
+        # if multiple loggers (e.g., CSV + WandB) are used.
+
+        wandb_logger = None
+
+        # Case A: Multiple loggers are used (self.loggers is a list)
+        if self.loggers:
+            for logger in self.loggers:
+                if isinstance(logger, pl.loggers.WandbLogger):
+                    wandb_logger = logger
+                    break
+
+        # Case B: Only one logger is used (self.logger is the object)
+        elif isinstance(self.logger, pl.loggers.WandbLogger):
+            wandb_logger = self.logger
+
+        # If a WandB logger was found, log the image
+        if wandb_logger:
+            # Local import to avoid issues if wandb is not globally imported
+            import wandb
+
+            wandb_logger.experiment.log({
                 "confusion_matrix": wandb.Image(save_path, caption="Confusion Matrix")
             })
+            print(f"--> Confusion Matrix successfully uploaded to W&B!")
+        else:
+            print("--> WandBLogger not found. Confusion Matrix saved locally only.")
+
+        # 6. CLEANUP: Delete the local file
+        if os.path.exists(save_path):
+            os.remove(save_path)
+            print(f"--> Local file '{save_path}' deleted to save space.")
     
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate)
+        optimizer = torch.optim.Adam(self.parameters(), lr=self.hparams.learning_rate, weight_decay=self.hparams.weight_decay)
         
         # Optional: Learning Rate Scheduler 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
