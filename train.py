@@ -13,23 +13,23 @@ from src.utils.visualization import plot_training_metrics
 def main():
 
     USE_WANDB = True
-    exp_name = "ResNet50-Refactored"
+    exp_name = "ResNet50"
 
     # --- 0. CONFIGURATION ---
     HYPERPARAMETERS = {
         # Architecture Params (from model_builder)
-        "n_layers": 5,
+        "n_layers": 4,
         "hidden_dim": 128,
         "apply_dropout": False,
         "dropout_rate": 0.2,
         "freeze_backbone": False,
-        "base_model": "resnet50",
+        "base_model": "ResNet50",
         "base_model_weights": "IMAGENET1K_V2",
 
         # Training Params
         "batch_size": 32,
         "img_size": 224,
-        "epochs": 1,
+        "epochs": 30,
         "learning_rate": 9.784011201151404e-05,
         "optimizer": "Adam",
         "weight_decay": 2.3314715675645093e-06,
@@ -64,14 +64,15 @@ def main():
         wandb.login()
         wandb_logger = WandbLogger(project="Malaria-Classification",
                                    name=exp_name,
-                                   config=HYPERPARAMETERS)
+                                   config=HYPERPARAMETERS,
+                                   log_model="all")
 
         loggers.append(wandb_logger)
 
     # 4. Callbacks
     checkpoint_callback = ModelCheckpoint(
         dirpath='checkpoints',
-        filename='malaria-{epoch:02d}-{val_loss:.2f}',
+        filename=f'{exp_name}'+'-{val_acc:.4f}',
         monitor='val_loss', mode='min', save_top_k=1
     )
     early_stop_callback = EarlyStopping(monitor='val_loss',
@@ -94,13 +95,13 @@ def main():
     # 7. Test
     trainer.test(model, datamodule=dm, ckpt_path='best')
 
+    if USE_WANDB:
+        wandb.finish()
+
     # 8. Wykresy (po treningu)
     # Zwróć uwagę, że ścieżka do logów może się różnić w zależności od wersji loggera
     print(f"Plotting metrics from: {csv_logger.log_dir}")
     plot_training_metrics(csv_logger.log_dir)
-
-    if USE_WANDB:
-        wandb.finish()
 
 if __name__ == "__main__":
     main()

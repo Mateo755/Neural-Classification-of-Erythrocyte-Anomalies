@@ -133,7 +133,7 @@ class MalariaClassifier(pl.LightningModule):
         
         # Optional: Learning Rate Scheduler 
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            optimizer, mode='min', factor=0.1, patience=3
+            optimizer, mode='min', factor=0.2, patience=2
         )
         return {
             "optimizer": optimizer,
