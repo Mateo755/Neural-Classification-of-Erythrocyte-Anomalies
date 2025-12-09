@@ -9,3 +9,5 @@ scikit-learn
 wandb
 numpy
 seaborn
+plotly
+ipywidgets
