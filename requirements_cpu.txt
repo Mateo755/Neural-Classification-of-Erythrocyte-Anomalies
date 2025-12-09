@@ -11,3 +11,4 @@ numpy
 seaborn
 plotly
 ipywidgets
+captum
