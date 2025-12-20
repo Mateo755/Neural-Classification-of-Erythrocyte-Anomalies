@@ -51,3 +51,75 @@ class CustomResnet(nn.Module):
     def forward(self, x):
         # Pass the input through the entire network (Backbone + New Head)
         return self.backbone(x)
+
+
+class CustomEfficientnet(nn.Module):
+    def __init__(self, num_classes=2, freeze_backbone=True,
+                 n_layers=4, hidden_dim=128, apply_dropout=False, dropout_rate=0.5):
+        super().__init__()
+
+
+        self.backbone = models.efficientnet_v2_s(weights=models.EfficientNet_V2_S_Weights.DEFAULT)
+
+        if freeze_backbone:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
+        in_features = self.backbone.classifier[-1].in_features
+
+        layers = []
+        current_dim = in_features
+
+
+        for _ in range(n_layers):
+            layers.append(nn.Linear(current_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            if apply_dropout:
+                layers.append(nn.Dropout(dropout_rate))
+
+            current_dim = hidden_dim
+
+
+        layers.append(nn.Linear(current_dim, num_classes))
+
+
+        self.backbone.classifier = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.backbone(x)
+
+
+class ViT(nn.Module):
+    def __init__(self, num_classes=2, freeze_backbone=True,
+                 n_layers=4, hidden_dim=128, apply_dropout=False, dropout_rate=0.5):
+        super().__init__()
+
+
+        self.backbone = models.vit_b_16(weights=models.ViT_B_16_Weights.DEFAULT)
+
+        if freeze_backbone:
+            for param in self.backbone.parameters():
+                param.requires_grad = False
+
+        in_features = self.backbone.heads[-1].in_features
+
+        layers = []
+        current_dim = in_features
+
+
+        for _ in range(n_layers):
+            layers.append(nn.Linear(current_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            if apply_dropout:
+                layers.append(nn.Dropout(dropout_rate))
+
+            current_dim = hidden_dim
+
+
+        layers.append(nn.Linear(current_dim, num_classes))
+
+
+        self.backbone.heads = nn.Sequential(*layers)
+
+    def forward(self, x):
+        return self.backbone(x)
